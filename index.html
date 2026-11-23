@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Baby Bite">
+<meta name="theme-color" content="#efe4ff">
+<title>Baby Bite</title>
+<link rel="apple-touch-icon" id="touchIcon" href="data:,">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#efe6ff}
+body{font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none;overscroll-behavior:none;color:#5b3f8f}
+#stage{position:fixed;inset:0;overflow:hidden;touch-action:none}
+#bg{position:absolute;inset:-10px;width:calc(100% + 20px);height:calc(100% + 20px);filter:blur(3px)}
+#baby{position:absolute;left:0;top:0;width:400px;height:460px;overflow:visible;transform-origin:0 0;will-change:transform;pointer-events:none}
+#fx{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+#ui{position:absolute;inset:0;pointer-events:none}
+#hud{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 12px);transform:translateX(-50%);text-align:center;background:rgba(255,255,255,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-radius:26px;padding:6px 28px 8px;box-shadow:0 6px 20px rgba(123,79,214,.15)}
+#hud .label{font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#9a7bd6}
+#count{font-size:50px;font-weight:900;line-height:1;color:#7b4fd6;font-variant-numeric:tabular-nums}
+#count.bump{animation:bump .3s ease}
+@keyframes bump{40%{transform:scale(1.25)}}
+.btn{position:absolute;top:calc(env(safe-area-inset-top) + 18px);width:46px;height:46px;border:none;border-radius:50%;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);font-size:20px;color:#7b4fd6;pointer-events:auto;box-shadow:0 4px 14px rgba(123,79,214,.15);font-family:inherit;font-weight:800}
+#snd{left:calc(env(safe-area-inset-left) + 14px)}
+#rst{right:calc(env(safe-area-inset-right) + 14px);transition:width .2s,border-radius .2s}
+#rst.sure{width:auto;padding:0 14px;border-radius:23px;font-size:14px;background:#ff8fab;color:#fff}
+#hint{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 26px);text-align:center;font-weight:800;font-size:18px;color:#7b4fd6;text-shadow:0 0 6px #fff,0 0 12px #fff,0 0 18px #fff;animation:float 1.6s ease-in-out infinite;transition:opacity .5s}
+#hint.gone{opacity:0}
+@keyframes float{50%{transform:translateY(-6px)}}
+.burst{position:absolute;font-weight:900;font-size:36px;color:#fff;white-space:nowrap;-webkit-text-stroke:2px #7b4fd6;paint-order:stroke fill;text-shadow:0 4px 0 #7b4fd6,0 8px 16px rgba(123,79,214,.35);animation:pop .9s cubic-bezier(.2,1.4,.4,1) forwards}
+.burst.big{font-size:44px;color:#ffe36e;-webkit-text-stroke:2px #e0568a;text-shadow:0 4px 0 #e0568a,0 8px 18px rgba(224,86,138,.4)}
+@keyframes pop{0%{transform:translate(-50%,-50%) scale(.3) rotate(var(--r));opacity:0}15%{opacity:1;transform:translate(-50%,-60%) scale(1.15) rotate(var(--r))}70%{opacity:1;transform:translate(-50%,-110%) scale(1) rotate(var(--r))}100%{opacity:0;transform:translate(-50%,-140%) scale(.9) rotate(var(--r))}}
+.p{position:absolute;font-size:22px;transform:translate(-50%,-50%);animation:fly .8s ease-out forwards}
+@keyframes fly{to{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.4) rotate(var(--rr));opacity:0}}
+#stage.shake{animation:shake .28s ease}
+@keyframes shake{20%{transform:translate(-6px,3px)}40%{transform:translate(5px,-4px)}60%{transform:translate(-4px,-2px)}80%{transform:translate(3px,3px)}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg id="bg" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <radialGradient id="wall" cx="50%" cy="10%" r="90%"><stop offset="0" stop-color="#fff6fb"/><stop offset=".5" stop-color="#f1e6ff"/><stop offset="1" stop-color="#dfd0fb"/></radialGradient>
+      <radialGradient id="rug" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffe3ee"/><stop offset=".6" stop-color="#ffd3e4"/><stop offset="1" stop-color="#e9d9ff"/></radialGradient>
+    </defs>
+    <rect width="400" height="800" fill="url(#wall)"/>
+    <rect x="285" y="40" width="70" height="90" rx="6" fill="#f3e4ff" stroke="#f8eaff" stroke-width="6" opacity=".8"/>
+    <g opacity=".85">
+      <rect x="-10" y="215" width="140" height="18" rx="9" fill="#fbe8d6"/>
+      <rect x="4" y="225" width="12" height="340" rx="6" fill="#f6dfc9"/>
+      <rect x="34" y="225" width="12" height="340" rx="6" fill="#f6dfc9"/>
+      <rect x="64" y="225" width="12" height="340" rx="6" fill="#f6dfc9"/>
+      <rect x="94" y="225" width="12" height="340" rx="6" fill="#f6dfc9"/>
+      <rect x="120" y="215" width="14" height="350" rx="7" fill="#f3d8c0"/>
+    </g>
+    <rect x="292" y="190" width="120" height="12" rx="5" fill="#f2d9bf"/>
+    <rect x="312" y="146" width="13" height="44" rx="3" fill="#f6c3c9"/>
+    <rect x="327" y="140" width="11" height="50" rx="3" fill="#c9b6f3"/>
+    <rect x="340" y="150" width="13" height="40" rx="3" fill="#f7e2a3"/>
+    <rect x="355" y="142" width="11" height="48" rx="3" fill="#bfe3d0"/>
+    <g fill="#9fcf9a"><ellipse cx="300" cy="212" rx="7" ry="11"/><ellipse cx="292" cy="232" rx="6" ry="10"/><ellipse cx="301" cy="252" rx="6" ry="10"/><ellipse cx="294" cy="272" rx="5" ry="9"/></g>
+    <path d="M355 470 L372 505 L410 510 L382 536 L389 574 L355 556 L321 574 L328 536 L300 510 L338 505 Z" fill="#ffe58f" stroke="#ffd56b" stroke-width="6" stroke-linejoin="round"/>
+    <rect x="300" y="560" width="140" height="90" rx="30" fill="#d7c2fb"/>
+    <ellipse cx="200" cy="790" rx="330" ry="150" fill="url(#rug)"/>
+    <g>
+      <ellipse cx="46" cy="566" rx="10" ry="30" fill="#fbefe3"/><ellipse cx="76" cy="566" rx="10" ry="30" fill="#fbefe3"/>
+      <ellipse cx="46" cy="568" rx="5" ry="20" fill="#f9d4d4"/><ellipse cx="76" cy="568" rx="5" ry="20" fill="#f9d4d4"/>
+      <ellipse cx="61" cy="680" rx="44" ry="50" fill="#fbefe3"/>
+      <circle cx="61" cy="618" r="36" fill="#fcf3ea"/>
+      <circle cx="49" cy="614" r="4" fill="#5a4038"/><circle cx="73" cy="614" r="4" fill="#5a4038"/>
+      <path d="M52 650 l9 6 l9 -6 l-9 -6z M61 650 l-12 -7 v14z M61 650 l12 -7 v14z" fill="#b99cf0"/>
+    </g>
+    <g fill="#fff" opacity=".45"><circle cx="70" cy="90" r="22"/><circle cx="210" cy="60" r="14"/><circle cx="360" cy="330" r="18"/><circle cx="30" cy="420" r="12"/><circle cx="250" cy="250" r="9"/></g>
+  </svg>
+
+  <svg id="baby" viewBox="0 0 400 460" xmlns="http://www.w3.org/2000/svg"></svg>
+  <svg id="fx" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div id="ui">
+    <div id="hud"><div class="label">🦈 bites</div><div id="count">0</div></div>
+    <button class="btn" id="snd" aria-label="Sound">🔊</button>
+    <button class="btn" id="rst" aria-label="Reset">↺</button>
+    <div id="hint">Tap anywhere… if you dare 👆</div>
+  </div>
+</div>
+
+<script>
+(function(){
+const NS='http://www.w3.org/2000/svg';
+const $=id=>document.getElementById(id);
+const baby=$('baby'), fx=$('fx'), stage=$('stage'), ui=$('ui');
+
+/* ---------- Draw the baby ---------- */
+function eye(id,cx,cy,side){
+  return `<g transform="translate(${cx} ${cy})">
+   <g id="${id}Open">
+    <ellipse rx="27" ry="30" fill="#fff"/>
+    <clipPath id="${id}Clip"><ellipse rx="26" ry="29"/></clipPath>
+    <g clip-path="url(#${id}Clip)"><g id="${id}Pupil">
+      <circle r="20" fill="url(#iris)"/><circle r="11" fill="#140a07"/>
+      <circle cx="7" cy="-8" r="6.5" fill="#fff"/><circle cx="-6" cy="7" r="2.8" fill="#fff" opacity=".85"/>
+    </g></g>
+    <path d="M-29 -2 Q0 -58 29 -2" fill="none" stroke="#3b2318" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M${side*24} -16 l${side*9} -8 M${side*28} -8 l${side*11} -4" stroke="#3b2318" stroke-width="3.5" stroke-linecap="round"/>
+   </g>
+   <path id="${id}Squint" d="M-25 6 Q0 -20 25 6" fill="none" stroke="#3b2318" stroke-width="6" stroke-linecap="round" opacity="0"/>
+  </g>`;
+}
+baby.innerHTML = `
+<defs>
+  <radialGradient id="skin" cx="50%" cy="38%" r="65%"><stop offset="0" stop-color="#ffe4d2"/><stop offset=".72" stop-color="#f9c9a7"/><stop offset="1" stop-color="#eeae88"/></radialGradient>
+  <radialGradient id="fur" cx="50%" cy="32%" r="72%"><stop offset="0" stop-color="#d3bdfa"/><stop offset="1" stop-color="#a484e2"/></radialGradient>
+  <radialGradient id="blush"><stop offset="0" stop-color="#ff8b9f" stop-opacity=".7"/><stop offset="1" stop-color="#ff8b9f" stop-opacity="0"/></radialGradient>
+  <radialGradient id="iris" cx="45%" cy="40%" r="60%"><stop offset="0" stop-color="#7a4528"/><stop offset=".7" stop-color="#3a1d10"/><stop offset="1" stop-color="#1d0e07"/></radialGradient>
+  <clipPath id="mouthClip"><path id="mouthClipPath"/></clipPath>
+  <g id="fingerShape">
+    <path d="M21 -21 C70 -23 200 -26 340 -29 L340 29 C200 26 70 23 21 21 A21 21 0 0 1 21 -21 Z" fill="#f3bf9c" stroke="#c98763" stroke-width="2.5"/>
+    <path d="M32 -15 C90 -17 200 -20 340 -22" stroke="#ffe2cd" stroke-width="6" fill="none" opacity=".6" stroke-linecap="round"/>
+    <rect x="5" y="-13" width="34" height="26" rx="11" fill="#ffe4da" stroke="#d99c80" stroke-width="2"/>
+    <path d="M9 -6 Q21 -10 34 -6" stroke="#fff" stroke-width="2.5" opacity=".8" fill="none" stroke-linecap="round"/>
+    <path d="M110 -15 q7 15 0 30 M123 -16 q7 16 0 32 M230 -18 q8 18 0 36" stroke="#c98763" stroke-width="2" fill="none" opacity=".55"/>
+  </g>
+</defs>
+<g id="body">
+  <path d="M62 480 C62 400 118 352 200 352 C282 352 338 400 338 480 L345 1100 L55 1100 Z" fill="url(#fur)"/>
+  <path d="M62 480 C62 400 118 352 200 352 C282 352 338 400 338 480" fill="none" stroke="#e2d4fd" stroke-width="5" stroke-dasharray="1 8" stroke-linecap="round" opacity=".7"/>
+  <path d="M200 372 V1100" stroke="#9b7bdc" stroke-width="3" opacity=".5"/>
+  <circle cx="200" cy="404" r="10" fill="#c7aff7" stroke="#9b7bdc" stroke-width="2.5"/>
+  <path d="M250 446 C238 436 234 428 240 423 C245 419 250 423 250 427 C250 423 255 419 260 423 C266 428 262 436 250 446 Z" fill="#ffd9e3"/>
+</g>
+<g>
+  <circle cx="86" cy="78" r="50" fill="url(#fur)"/><circle cx="86" cy="78" r="28" fill="#9f7edb"/>
+  <circle cx="314" cy="78" r="50" fill="url(#fur)"/><circle cx="314" cy="78" r="28" fill="#9f7edb"/>
+  <ellipse cx="200" cy="205" rx="172" ry="168" fill="url(#fur)"/>
+  <ellipse cx="200" cy="205" rx="172" ry="168" fill="none" stroke="#e5d8fd" stroke-width="6" stroke-dasharray="1 9" stroke-linecap="round" opacity=".75"/>
+  <ellipse cx="200" cy="222" rx="143" ry="140" fill="#9374d2"/>
+</g>
+<ellipse cx="72" cy="256" rx="22" ry="30" fill="#f6bf9b"/><ellipse cx="74" cy="258" rx="11" ry="17" fill="#eaa684"/>
+<ellipse cx="328" cy="256" rx="22" ry="30" fill="#f6bf9b"/><ellipse cx="326" cy="258" rx="11" ry="17" fill="#eaa684"/>
+<ellipse cx="200" cy="238" rx="130" ry="122" fill="url(#skin)"/>
+<path d="M78 222 C70 150 120 96 200 94 C280 96 330 150 322 222 C312 188 298 168 280 160 Q270 180 250 170 Q238 160 232 150 Q220 172 196 168 Q176 164 172 150 Q160 172 138 170 Q116 168 112 160 C100 170 86 190 78 222 Z" fill="#8b4a2b"/>
+<path d="M118 132 Q158 106 200 102 M245 108 Q285 120 305 150" stroke="#b06a42" stroke-width="4" fill="none" opacity=".6" stroke-linecap="round"/>
+<path d="M196 152 C180 142 186 118 204 120 C220 122 220 142 206 146 C198 148 194 140 200 134" stroke="#6b3418" stroke-width="5" fill="none" stroke-linecap="round"/>
+<path d="M84 228 q-12 20 4 36 M316 228 q12 20 -4 36" stroke="#8b4a2b" stroke-width="6" fill="none" stroke-linecap="round"/>
+<path d="M122 186 Q148 172 174 184 M226 184 Q252 172 278 186" stroke="#7a4127" stroke-width="5" fill="none" stroke-linecap="round"/>
+${eye('eL',148,226,-1)}
+${eye('eR',252,226,1)}
+<ellipse cx="200" cy="264" rx="13" ry="9" fill="#efab88"/><ellipse cx="196" cy="261" rx="5" ry="3" fill="#ffe7d8"/>
+<ellipse cx="120" cy="290" rx="40" ry="27" fill="url(#blush)"/><ellipse cx="280" cy="290" rx="40" ry="27" fill="url(#blush)"/>
+<g id="mouth">
+  <path id="cavity" fill="#7a1f2b"/>
+  <g clip-path="url(#mouthClip)">
+    <ellipse id="throat" cx="200" fill="#4a0d18"/>
+    <ellipse id="tongue" cx="200" fill="#f08a96"/>
+  </g>
+  <path id="lips" fill="none" stroke="#c46a5c" stroke-width="3.5" stroke-linejoin="round"/>
+  <g id="innerFinger" style="display:none"><use href="#fingerShape"/></g>
+  <g clip-path="url(#mouthClip)"><path id="teeth" fill="#fffaf3" stroke="#e6d8c8" stroke-width="1.2" stroke-linejoin="round"/></g>
+</g>`;
+
+const cavity=$('cavity'), clipP=$('mouthClipPath'), lips=$('lips'), teeth=$('teeth'), tongue=$('tongue'), throat=$('throat'), innerFinger=$('innerFinger');
+const eyes=[{open:$('eLOpen'),pupil:$('eLPupil'),squint:$('eLSquint'),x:148,y:226},{open:$('eROpen'),pupil:$('eRPupil'),squint:$('eRSquint'),x:252,y:226}];
+
+/* ---------- Mouth geometry ---------- */
+const MCX=200, MCY=297, MX=200, MY=309;
+function qpt(p0,c,p2,t){const u=1-t;return [u*u*p0[0]+2*u*t*c[0]+t*t*p2[0], u*u*p0[1]+2*u*t*c[1]+t*t*p2[1]];}
+function teethRow(p0,c,p2,n,L,sign){
+  let d='';const a=.05,w=(1-2*a)/n;
+  for(let i=0;i<n;i++){
+    const ta=a+i*w,tb=ta+w,tm=(ta+tb)/2;
+    const A=qpt(p0,c,p2,ta),B=qpt(p0,c,p2,tb),M=qpt(p0,c,p2,tm);
+    const k=.55+.45*Math.sin(Math.PI*tm);
+    d+=`M${A[0].toFixed(1)} ${(A[1]-sign*3).toFixed(1)}L${M[0].toFixed(1)} ${(M[1]+sign*L*k).toFixed(1)}L${B[0].toFixed(1)} ${(B[1]-sign*3).toFixed(1)}Z`;
+  }
+  return d;
+}
+let lastO=-1;
+function setMouth(o){
+  if(Math.abs(o-lastO)<.002) return; lastO=o;
+  const rx=58+10*o, ut=-6+30*o, lb=14+42*o;
+  const L=[MCX-rx,MCY], R=[MCX+rx,MCY], cu=[MCX,MCY-2*ut], cl=[MCX,MCY+2*lb];
+  const d=`M${L[0].toFixed(1)} ${MCY}Q${MCX} ${cu[1].toFixed(1)} ${R[0].toFixed(1)} ${MCY}Q${MCX} ${cl[1].toFixed(1)} ${L[0].toFixed(1)} ${MCY}Z`;
+  cavity.setAttribute('d',d); clipP.setAttribute('d',d); lips.setAttribute('d',d);
+  const Lt=11+10*o;
+  teeth.setAttribute('d',teethRow(L,cu,R,9,Lt,1)+teethRow(R,cl,L,8,Lt*.9,-1));
+  throat.setAttribute('cy',MCY+(lb-ut)/2); throat.setAttribute('rx',rx*.55); throat.setAttribute('ry',Math.max(2,(ut+lb)*.32));
+  tongue.setAttribute('cy',MCY+lb-4); tongue.setAttribute('rx',30+10*o); tongue.setAttribute('ry',9+12*o);
+}
+
+/* ---------- Storage ---------- */
+function load(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v);}catch(e){return d;}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+let count=load('babyBiteCount',0), soundOn=load('babyBiteSound',true);
+const countEl=$('count'); countEl.textContent=count;
+$('snd').textContent=soundOn?'🔊':'🔇';
+
+/* ---------- Sound (made in code, no files) ---------- */
+let ac=null, noiseBuf=null;
+function audio(){
+  if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+  if(ac&&ac.state==='suspended'){try{ac.resume();}catch(e){}}
+  return ac;
+}
+function env(g,t,peak,dur){g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+dur);}
+function chompSound(vol){
+  const a=audio(); if(!a||!soundOn) return; const t=a.currentTime;
+  if(!noiseBuf){noiseBuf=a.createBuffer(1,a.sampleRate*.25,a.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;}
+  const n=a.createBufferSource(); n.buffer=noiseBuf;
+  const bp=a.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=1.2;
+  bp.frequency.setValueAtTime(2400,t); bp.frequency.exponentialRampToValueAtTime(600,t+.12);
+  const g=a.createGain(); env(g,t,.9*vol,.14); n.connect(bp).connect(g).connect(a.destination); n.start(t); n.stop(t+.16);
+  const o=a.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(230,t); o.frequency.exponentialRampToValueAtTime(55,t+.13);
+  const g2=a.createGain(); env(g2,t,.8*vol,.17); o.connect(g2).connect(a.destination); o.start(t); o.stop(t+.19);
+  const c=a.createOscillator(); c.type='square'; c.frequency.setValueAtTime(1900,t); c.frequency.exponentialRampToValueAtTime(400,t+.03);
+  const g3=a.createGain(); env(g3,t,.18*vol,.045); c.connect(g3).connect(a.destination); c.start(t); c.stop(t+.06);
+}
+function giggle(){
+  const a=audio(); if(!a||!soundOn) return; const t=a.currentTime; const base=560+Math.random()*140;
+  const lp=a.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2600; lp.connect(a.destination);
+  const notes=3+Math.floor(Math.random()*2);
+  for(let i=0;i<notes;i++){
+    const s=t+i*.115, o=a.createOscillator(); o.type='triangle';
+    const f=base*(1.25-i*.07); o.frequency.setValueAtTime(f,s); o.frequency.exponentialRampToValueAtTime(f*.78,s+.09);
+    const lfo=a.createOscillator(), lg=a.createGain(); lfo.frequency.value=32; lg.gain.value=f*.04; lfo.connect(lg).connect(o.frequency);
+    const g=a.createGain(); env(g,s,.22,.1); o.connect(g).connect(lp);
+    o.start(s); o.stop(s+.12); lfo.start(s); lfo.stop(s+.12);
+  }
+}
+function ahSound(){
+  const a=audio(); if(!a||!soundOn) return; const t=a.currentTime;
+  const o=a.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(380,t); o.frequency.exponentialRampToValueAtTime(640,t+.13);
+  const g=a.createGain(); env(g,t,.09,.16); o.connect(g).connect(a.destination); o.start(t); o.stop(t+.18);
+}
+
+/* ---------- Layout & state ---------- */
+let W,H,base,hx,hy;
+function layout(){W=innerWidth;H=innerHeight;base=Math.min(W*.84/400,H*.5/460,1.15);hx=W/2;hy=H*.64;}
+layout(); addEventListener('resize',layout);
+
+const st={bx:hx,by:hy,s:base,rot:0,o:.5,idleO:.55,nextGrin:0,mode:'idle',tx:0,ty:0,t0:0,tc:0,chew2:false,
+  squashT:-1e9,squintUntil:0,blinkAt:1500,blinkStart:-1e9,lookX:0,lookY:0,lookUntil:0,cur:null,lastBite:-1e9,combo:0};
+const fingers=[];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=(c,t,k,dt)=>c+(t-c)*(1-Math.exp(-k*dt));
+
+/* ---------- Fingers ---------- */
+function makeFinger(x,y){
+  const dir = x>W/2 ? 1 : -1;
+  const g=document.createElementNS(NS,'g');
+  const u=document.createElementNS(NS,'use'); u.setAttribute('href','#fingerShape'); g.appendChild(u);
+  const m=document.createElementNS(NS,'g'); m.style.display='none';
+  let d='';
+  for(let x2=16;x2<=88;x2+=11){d+=`M${x2-4} -21L${x2} -13L${x2+4} -21ZM${x2+1} 21L${x2+5} 13L${x2+9} 21Z`;}
+  m.innerHTML=`<ellipse cx="45" cy="0" rx="50" ry="17" fill="#ff7d8f" opacity=".3"/><path d="${d}" fill="#e0607a" opacity=".85"/>`;
+  g.appendChild(m); fx.appendChild(g);
+  const f={g,marks:m,x,y,dir,born:performance.now(),state:'aim',tb:0,tm:0};
+  fingers.push(f); return f;
+}
+
+/* ---------- Effects ---------- */
+const words=['CHOMP!','NOM!','OM NOM!','GOTCHA!','MUNCH!','CRUNCH!','YUM!'];
+function burst(x,y,text,big){
+  const d=document.createElement('div'); d.className='burst'+(big?' big':''); d.textContent=text;
+  d.style.left=clamp(x,90,W-90)+'px'; d.style.top=Math.max(150,y)+'px';
+  d.style.setProperty('--r',(Math.random()*24-12).toFixed(1)+'deg');
+  ui.appendChild(d); setTimeout(()=>d.remove(),950);
+}
+function particles(x,y,n,set){
+  for(let i=0;i<n;i++){
+    const p=document.createElement('span'); p.className='p'; p.textContent=set[i%set.length];
+    const a=Math.random()*Math.PI*2, r=60+Math.random()*90;
+    p.style.left=x+'px'; p.style.top=y+'px';
+    p.style.setProperty('--dx',(Math.cos(a)*r).toFixed(0)+'px'); p.style.setProperty('--dy',(Math.sin(a)*r).toFixed(0)+'px');
+    p.style.setProperty('--rr',(Math.random()*360-180).toFixed(0)+'deg');
+    ui.appendChild(p); setTimeout(()=>p.remove(),850);
+  }
+}
+function shake(){stage.classList.remove('shake');void stage.offsetWidth;stage.classList.add('shake');}
+
+/* ---------- Game flow ---------- */
+function bite(x,y){
+  const now=performance.now();
+  if(st.mode==='chomp') release(now);
+  else if(st.mode==='lunge'&&st.cur){st.cur.state='missed';st.cur.tm=now;}
+  const f=makeFinger(x,y); st.cur=f;
+  st.mode='lunge'; st.t0=now; st.tx=x+f.dir*38*base; st.ty=y;
+  $('hint').classList.add('gone');
+  ahSound();
+}
+function chomp(now){
+  st.mode='chomp'; st.tc=now; st.chew2=false; st.squashT=now;
+  const f=st.cur; if(f){f.state='inner';}
+  chompSound(1); shake();
+  try{navigator.vibrate&&navigator.vibrate(35);}catch(e){}
+  count++; save('babyBiteCount',count); countEl.textContent=count;
+  countEl.classList.remove('bump'); void countEl.offsetWidth; countEl.classList.add('bump');
+  st.combo = now-st.lastBite<1100 ? st.combo+1 : 1; st.lastBite=now;
+  const bx=f?f.x:st.tx, by=f?f.y:st.ty;
+  if(count%25===0){burst(W/2,H*.32,`🎉 ${count} bites!`,true);particles(W/2,H*.32,18,['🎉','💜','⭐','✨','🍼']);}
+  else burst(bx,by-90,st.combo>=3?`COMBO x${st.combo}!`:words[Math.floor(Math.random()*words.length)],st.combo>=5);
+  particles(bx,by,6,['✨','💜','⭐']);
+}
+function release(now){
+  const f=st.cur;
+  if(f){f.state='bitten';f.tb=now;f.marks.style.display='';}
+  innerFinger.style.display='none';
+  st.cur=null; st.mode='return'; st.squintUntil=now+650;
+  giggle();
+}
+
+/* ---------- Input ---------- */
+stage.addEventListener('pointerdown',e=>{
+  if(e.target.closest&&e.target.closest('.btn')) return;
+  e.preventDefault(); audio();
+  st.lookX=e.clientX; st.lookY=e.clientY; st.lookUntil=performance.now()+1500;
+  bite(e.clientX,e.clientY);
+});
+stage.addEventListener('pointermove',e=>{st.lookX=e.clientX;st.lookY=e.clientY;st.lookUntil=performance.now()+1500;});
+['pointerup','touchend','click'].forEach(ev=>document.addEventListener(ev,()=>audio(),{passive:true}));
+document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+document.addEventListener('gesturestart',e=>e.preventDefault());
+document.addEventListener('contextmenu',e=>e.preventDefault());
+
+$('snd').addEventListener('click',()=>{soundOn=!soundOn;save('babyBiteSound',soundOn);$('snd').textContent=soundOn?'🔊':'🔇';if(soundOn)giggle();});
+let resetTimer=0;
+$('rst').addEventListener('click',()=>{
+  const b=$('rst');
+  if(b.classList.contains('sure')){
+    count=0;save('babyBiteCount',0);countEl.textContent=0;b.classList.remove('sure');b.textContent='↺';clearTimeout(resetTimer);
+  }else{
+    b.classList.add('sure');b.textContent='Reset?';
+    resetTimer=setTimeout(()=>{b.classList.remove('sure');b.textContent='↺';},2500);
+  }
+});
+
+/* ---------- Animation loop ---------- */
+function update(now,dt){
+  const t=now/1000; let tx,ty,ts,to,k,ko,trot,kr=10;
+  if(st.mode==='lunge'){
+    tx=st.tx;ty=st.ty;ts=base*1.12;to=1;k=17;ko=16;trot=clamp((st.tx-st.bx)*.04,-14,14);
+    if(Math.hypot(st.tx-st.bx,st.ty-st.by)<7||now-st.t0>360) chomp(now);
+  }else if(st.mode==='chomp'){
+    const a=now-st.tc;
+    tx=st.tx;ty=st.ty;ts=base*1.12;k=30;ko=60;kr=40;
+    to=.3+(a>90?.07*Math.max(0,Math.sin(a/1000*2*Math.PI*6)):0);
+    trot=Math.sin(a/1000*2*Math.PI*7)*7*Math.max(0,1-a/430);
+    if(!st.chew2&&a>210){st.chew2=true;chompSound(.4);}
+    if(a>430) release(now);
+  }else{
+    if(now>st.nextGrin){st.idleO=[.45,.55,.55,.75][Math.floor(Math.random()*4)];st.nextGrin=now+2500+Math.random()*3500;}
+    tx=hx;ty=hy+Math.sin(t*2.1)*6;ts=base;to=st.idleO;trot=Math.sin(t*1.3)*2.5;
+    k=st.mode==='return'?4.5:6;ko=7;
+    if(st.mode==='return'&&Math.hypot(hx-st.bx,hy-st.by)<12) st.mode='idle';
+  }
+  st.bx=ease(st.bx,tx,k,dt); st.by=ease(st.by,ty,k,dt); st.s=ease(st.s,ts,k,dt);
+  st.o=ease(st.o,to,ko,dt); st.rot=ease(st.rot,trot,kr,dt);
+}
+
+function render(now){
+  const t=now/1000;
+  const e=Math.pow(Math.max(0,1-(now-st.squashT)/240),2);
+  const sx=st.s*(1+.1*e), sy=st.s*(1-.12*e);
+  baby.style.transform=`translate(${st.bx.toFixed(1)}px,${st.by.toFixed(1)}px) rotate(${st.rot.toFixed(2)}deg) scale(${sx.toFixed(4)},${sy.toFixed(4)}) translate(${-MX}px,${-MY}px)`;
+  setMouth(st.o);
+
+  // eyes
+  if(now>st.blinkAt){st.blinkStart=now;st.blinkAt=now+2200+Math.random()*3000;}
+  const bp=(now-st.blinkStart)/150, blink=bp<1?1-Math.sin(Math.PI*bp)*.92:1;
+  const squint = st.mode==='chomp' || now<st.squintUntil;
+  const wide = st.mode==='lunge' ? 1.12 : 1;
+  let lx,ly,hasLook=true;
+  if(st.mode==='lunge'||st.mode==='chomp'){const f=st.cur; lx=f?f.x:st.tx; ly=f?f.y:st.ty;}
+  else if(now<st.lookUntil){lx=st.lookX;ly=st.lookY;}
+  else hasLook=false;
+  for(const ey of eyes){
+    ey.open.setAttribute('opacity',squint?0:1);
+    ey.squint.setAttribute('opacity',squint?1:0);
+    ey.open.setAttribute('transform',`scale(${wide} ${(wide*blink).toFixed(3)})`);
+    let ox,oy;
+    if(hasLook){
+      const ex=st.bx+st.s*(ey.x-MX), eyy=st.by+st.s*(ey.y-MY);
+      const dx=lx-ex, dy=ly-eyy, dist=Math.hypot(dx,dy)||1, m=Math.min(7,dist/25);
+      ox=dx/dist*m; oy=dy/dist*m;
+    }else{ox=Math.sin(t*.6)*3;oy=Math.cos(t*.45)*2;}
+    ey.pupil.setAttribute('transform',`translate(${ox.toFixed(2)} ${oy.toFixed(2)})`);
+  }
+
+  // finger inside the mouth (keeps the same spot on screen while the baby moves)
+  const cur=st.cur;
+  if(cur&&cur.state==='inner'){
+    const r=st.rot*Math.PI/180, c=Math.cos(r), s=Math.sin(r);
+    const dx=cur.x-st.bx, dy=cur.y-st.by;
+    const lx2=MX+(dx*c+dy*s)/sx, ly2=MY+(-dx*s+dy*c)/sy;
+    innerFinger.setAttribute('transform',`translate(${lx2.toFixed(1)} ${ly2.toFixed(1)}) rotate(${(-st.rot).toFixed(2)}) scale(${(cur.dir*base/sx).toFixed(4)} ${(base/sy).toFixed(4)})`);
+    innerFinger.style.display='';
+  }
+
+  // fingers on screen
+  for(let i=fingers.length-1;i>=0;i--){
+    const f=fingers[i], age=now-f.born;
+    if(f.state==='inner'){f.g.style.display='none';continue;}
+    f.g.style.display='';
+    let sc=1,op=1,rot=0;
+    if(f.state==='aim'){const p=Math.min(1,age/160);sc=.6+.4*(1+2.7*Math.pow(p-1,3)+1.7*Math.pow(p-1,2));}
+    if(f.state==='bitten'){const a=now-f.tb;rot=Math.sin(a/35)*5*Math.exp(-a/350);op=a<650?1:Math.max(0,1-(a-650)/450);}
+    if(f.state==='missed'){const a=now-f.tm;op=Math.max(0,1-a/250);sc=1-.3*Math.min(1,a/250);}
+    if(op<=0){f.g.remove();fingers.splice(i,1);continue;}
+    f.g.setAttribute('transform',`translate(${f.x.toFixed(1)} ${f.y.toFixed(1)}) rotate(${(rot*f.dir).toFixed(2)}) scale(${(f.dir*base*sc).toFixed(4)} ${(base*sc).toFixed(4)})`);
+    f.g.setAttribute('opacity',op.toFixed(3));
+  }
+}
+
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.05,Math.max(0,(now-last)/1000)); last=now;
+  update(now,dt); render(now);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ---------- Home Screen icon drawn from the baby ---------- */
+setTimeout(()=>{
+  try{
+    const clone=baby.cloneNode(true);
+    clone.removeAttribute('style'); clone.removeAttribute('id');
+    clone.setAttribute('width',180); clone.setAttribute('height',180); clone.setAttribute('viewBox','30 20 340 340');
+    const xml=new XMLSerializer().serializeToString(clone);
+    const img=new Image();
+    img.onload=()=>{
+      const c=document.createElement('canvas'); c.width=c.height=180; const x=c.getContext('2d');
+      const g=x.createLinearGradient(0,0,0,180); g.addColorStop(0,'#fff2fa'); g.addColorStop(1,'#e3d3ff');
+      x.fillStyle=g; x.fillRect(0,0,180,180); x.drawImage(img,0,0,180,180);
+      $('touchIcon').href=c.toDataURL('image/png');
+    };
+    img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(xml);
+  }catch(e){}
+},400);
+})();
+</script>
+</body>
+</html>
